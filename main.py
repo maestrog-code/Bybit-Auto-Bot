@@ -50,15 +50,33 @@ def send_telegram(message):
     except Exception as e:
         print(f"Telegram Error: {e}")
 
+# --- REPLACE THE OLD get_crypto_data FUNCTION WITH THIS ---
+
 def get_crypto_data(symbol):
-    """Downloads data from Yahoo Finance"""
-    # Convert Bybit symbol (BTCUSDT) to Yahoo (BTC-USD)
+    """Downloads data from Yahoo Finance with Anti-Blocking Headers"""
     y_symbol = symbol.replace("USDT", "-USD")
+    
     try:
-        df = yf.download(y_symbol, period="1y", interval="1d", progress=False)
+        # 1. Create a "Session" to trick Yahoo
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        })
+        
+        # 2. Download with the session (and a tiny delay)
+        # We verify ssl=False to avoid strict handshake errors on cloud
+        df = yf.download(y_symbol, period="1y", interval="1d", progress=False, session=session)
+        
+        # 3. Validation: Did we actually get data?
+        if df.empty:
+            print(f"⚠️ Yahoo gave empty data for {symbol}")
+            return pd.DataFrame()
+            
         return df
-    except:
-        return pd.DataFrame() # Return empty if failed
+
+    except Exception as e:
+        print(f"❌ Data Download Error for {symbol}: {e}")
+        return pd.DataFrame()
 
 def place_order(symbol, side):
     try:
