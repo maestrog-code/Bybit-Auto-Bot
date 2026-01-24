@@ -51,33 +51,44 @@ def send_telegram(message):
         print(f"Telegram Error: {e}")
 
 # --- REPLACE THE OLD get_crypto_data FUNCTION WITH THIS ---
-
 def get_crypto_data(symbol):
-    """Downloads data from Yahoo Finance with Anti-Blocking Headers"""
-    y_symbol = symbol.replace("USDT", "-USD")
-    
+    """Downloads candle data directly from Bybit (No Yahoo Blocking!)"""
     try:
-        # 1. Create a "Session" to trick Yahoo
-        session = requests.Session()
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        })
-        
-        # 2. Download with the session (and a tiny delay)
-        # We verify ssl=False to avoid strict handshake errors on cloud
-        df = yf.download(y_symbol, period="1y", interval="1d", progress=False, session=session)
-        
-        # 3. Validation: Did we actually get data?
-        if df.empty:
-            print(f"⚠️ Yahoo gave empty data for {symbol}")
+        # Fetch 200 days of data
+        # interval "D" = 1 Day
+        response = session.get_kline(
+            category="linear",
+            symbol=symbol,
+            interval="D",
+            limit=200
+        )
+
+        # Check if Bybit sent valid data
+        if response['retCode'] != 0:
+            print(f"❌ Bybit Data Error for {symbol}: {response['retMsg']}")
             return pd.DataFrame()
-            
+
+        # Bybit returns: [startTime, open, high, low, close, volume, turnover]
+        data_list = response['result']['list']
+
+        # Convert to a Table (DataFrame)
+        df = pd.DataFrame(data_list, columns=['Time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Turnover'])
+
+        # Clean up the numbers (Bybit sends them as text strings)
+        df['Open'] = pd.to_numeric(df['Open'])
+        df['High'] = pd.to_numeric(df['High'])
+        df['Low'] = pd.to_numeric(df['Low'])
+        df['Close'] = pd.to_numeric(df['Close'])
+        df['Volume'] = pd.to_numeric(df['Volume'])
+
+        # Bybit sends newest data first. We need oldest first for math.
+        df = df.iloc[::-1].reset_index(drop=True)
+
         return df
 
     except Exception as e:
-        print(f"❌ Data Download Error for {symbol}: {e}")
+        print(f"❌ Data Crash for {symbol}: {e}")
         return pd.DataFrame()
-
 def place_order(symbol, side):
     try:
         # 1. Get Current Price
