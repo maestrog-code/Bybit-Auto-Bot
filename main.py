@@ -18,7 +18,19 @@ BYBIT_SECRET = os.getenv("BYBIT_SECRET")
 # Trading Settings
 USE_TESTNET = True  # Set True for Demo, False for Real Money
 QUANTITY_USDT = 50  # Investment amount per trade
-WATCHLIST = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT", "XRPUSDT"]
+# --- UPDATE THIS LIST IN YOUR CODE ---
+WATCHLIST = [
+    "BTCUSDT",   # Bitcoin (The King)
+    "ETHUSDT",   # Ethereum (The Queen)
+    "SOLUSDT",   # Solana (Fast Mover)
+    "BNBUSDT",   # Binance Coin
+    "XRPUSDT",   # Ripple (Volatile)
+    "DOGEUSDT",  # Doge (Meme Mover)
+    "ADAUSDT",   # Cardano
+    "AVAXUSDT",  # Avalanche
+    "LINKUSDT",  # Chainlink
+    "LTCUSDT"    # Litecoin
+]
 
 # Initialize Bybit Connection
 session = HTTP(
